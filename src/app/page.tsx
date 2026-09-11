@@ -32,7 +32,7 @@ export default async function DashboardPage() {
 
       <section className="mt-8 grid grid-cols-2 gap-4 sm:grid-cols-3">
         <StatCard label="Leads totais" value={totalLeads} />
-        <StatCard label="Gasto de IA no mês" value={`US$ ${spentUsd.toFixed(2)}`} />
+        <StatCard label="Gasto de IA no mês" value={formatUsd(spentUsd)} />
       </section>
 
       <section className="mt-10">
@@ -64,6 +64,11 @@ export default async function DashboardPage() {
       </section>
     </main>
   );
+}
+
+function formatUsd(value: number): string {
+  const decimals = value > 0 && value < 0.01 ? 4 : 2;
+  return `US$ ${value.toFixed(decimals).replace(".", ",")}`;
 }
 
 function StatCard({ label, value }: { label: string; value: string | number }) {

@@ -10,7 +10,7 @@ const MODEL_PRICING_PER_MILLION_TOKENS: Record<
   { input: number; output: number }
 > = {
   "gpt-5.1": { input: 1.25, output: 10 },
-  "gpt-5.1-mini": { input: 0.25, output: 2 },
+  "gpt-5-mini": { input: 0.25, output: 2 },
 };
 
 export class BudgetExceededError extends Error {
