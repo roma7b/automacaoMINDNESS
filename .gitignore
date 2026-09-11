@@ -1,0 +1,39 @@
+# deps
+node_modules/
+.pnpm-store/
+
+# env & secrets
+.env
+.env.local
+.env.*.local
+config/business.json
+
+# database
+*.db
+*.db-shm
+*.db-wal
+data/
+backups/
+
+# browser profile (contém sessão logada — nunca versionar)
+.chrome-profile/
+browser-state/
+
+# build
+.next/
+dist/
+out/
+*.tsbuildinfo
+
+# runtime artifacts
+logs/
+screenshots/
+traces/
+
+# testing
+test-results/
+playwright-report/
+
+# os
+.DS_Store
+Thumbs.db

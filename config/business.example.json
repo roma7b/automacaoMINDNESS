@@ -1,0 +1,35 @@
+{
+  "owner": {
+    "name": "{{OWNER_NAME}}",
+    "role": "{{OWNER_ROLE}}"
+  },
+  "company": {
+    "name": "{{COMPANY_NAME}}",
+    "website": "{{COMPANY_WEBSITE}}",
+    "instagramHandle": "{{@SEU_INSTAGRAM}}"
+  },
+  "channels": {
+    "whatsappLink": "{{https://wa.me/55...}}",
+    "affiliateGroupLink": "{{link do grupo de afiliados}}"
+  },
+  "offer": {
+    "onePagePitch": "{{o que o serviço resolve, em uma frase}}",
+    "howItWorks": ["{{passo 1}}", "{{passo 2}}", "{{passo 3}}"],
+    "revenueModel": "{{como a empresa ganha dinheiro}}",
+    "marketJargon": [
+      { "term": "{{termo do nicho}}", "meaning": "{{o que significa}}" }
+    ]
+  },
+  "claims": {
+    "verified": ["{{afirmação já comprovada 1}}", "{{afirmação já comprovada 2}}"],
+    "unverified": ["{{afirmação a comprovar 1}}"]
+  },
+  "icp": {
+    "segments": ["{{segmento 1}}", "{{segmento 2}}", "{{segmento 3}}"],
+    "keywords": ["{{palavra 1}}", "{{palavra 2}}", "{{palavra 3}}"],
+    "geography": "{{região}}"
+  },
+  "affiliates": {
+    "topics": ["{{tema 1}}", "{{tema 2}}"]
+  }
+}
