@@ -21,6 +21,10 @@ const envSchema = z.object({
   MAX_SECONDS_BETWEEN_DMS: z.coerce.number().int().positive(),
   OPERATING_HOURS: z.string().regex(/^\d{2}:\d{2}-\d{2}:\d{2}$/),
   OPERATING_TIMEZONE: z.string().min(1),
+
+  MAX_PROFILE_VISITS_PER_DAY: z.coerce.number().int().positive(),
+  DISCOVERY_MIN_SECONDS_BETWEEN_ACTIONS: z.coerce.number().int().positive(),
+  DISCOVERY_MAX_SECONDS_BETWEEN_ACTIONS: z.coerce.number().int().positive(),
 });
 
 export type Env = z.infer<typeof envSchema>;
