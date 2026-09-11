@@ -102,6 +102,11 @@ describe("fetchProfileSnapshot (fixture page, no live Instagram)", () => {
   });
 });
 
+// Mirrors the real (undocumented) structure found live on instagram.com:
+// header has several <section>s in a fixed order (empty wrapper, name+counts,
+// bio+link, follow/message buttons, ...), and the post grid's images only
+// carry real captions after the avatar/story-highlights row, which is why
+// fetchProfileSnapshot scrolls before reading them.
 const FIXTURE_PROFILE_HTML = `<!doctype html>
 <html>
 <head>
@@ -109,15 +114,20 @@ const FIXTURE_PROFILE_HTML = `<!doctype html>
 </head>
 <body>
   <header>
-    <h1>Oficina do João</h1>
-    <a href="https://l.instagram.com/?u=https://wa.me/5527999999999" rel="me nofollow noopener">wa.me</a>
-    <section>Oficina mecânica em Vila Velha. Ainda fazemos tudo no caderninho.</section>
+    <h1>oficina_do_joao_es</h1>
+    <section></section>
+    <section>oficina_do_joao_es\nOficina do João\n96 publicações\n812 seguidores\n340 seguindo</section>
+    <section>Oficina mecânica em Vila Velha. Ainda fazemos tudo no caderninho.
+<a href="https://l.instagram.com/?u=https://wa.me/5527999999999" rel="me nofollow noopener">wa.me</a></section>
+    <section>Seguir\nEnviar mensagem</section>
   </header>
   <main>
-    <article>
-      <img alt="Foto de orçamento anotado à mão" />
-      <img alt="Profile picture of oficina_do_joao_es" />
-    </article>
+    <img alt="Foto do perfil de oficina_do_joao_es" />
+    <img alt="" />
+    <img alt="" />
+    <img alt="Foto do story no destaque de oficina_do_joao_es" />
+    <img alt="Foto de orçamento anotado à mão" />
+    <img alt="Foto da fila de clientes esperando atendimento" />
   </main>
 </body>
 </html>`;

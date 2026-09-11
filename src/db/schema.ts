@@ -37,6 +37,7 @@ export const leads = sqliteTable(
       .notNull()
       .default("browser_contact_pending"),
     icpScore: real("icp_score"),
+    icpReasoning: text("icp_reasoning"),
     priority: integer("priority").notNull().default(0),
     niche: text("niche"),
     profileType: text("profile_type"), // store | employee | owner | decision_maker | creator

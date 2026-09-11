@@ -1,6 +1,7 @@
-import { count } from "drizzle-orm";
+import { count, desc, eq } from "drizzle-orm";
 import { db } from "@/db/client";
 import { leads } from "@/db/schema";
+import type { InstagramProfileSnapshot } from "./types";
 
 export async function countLeadsByPipelineStatus() {
   const rows = await db
@@ -14,4 +15,44 @@ export async function countLeadsByPipelineStatus() {
 export async function countLeadsTotal() {
   const [row] = await db.select({ total: count() }).from(leads);
   return row?.total ?? 0;
+}
+
+export interface LeadListItem {
+  id: number;
+  instagramUsername: string;
+  funnel: string;
+  pipelineStatus: string;
+  channelStatus: string;
+  icpScore: number | null;
+  profileType: string | null;
+  source: string | null;
+  doNotContact: boolean;
+  createdAt: string;
+  bio: string;
+}
+
+export async function listLeads(): Promise<LeadListItem[]> {
+  const rows = await db.select().from(leads).orderBy(desc(leads.icpScore), desc(leads.createdAt));
+
+  return rows.map((row) => {
+    const snapshot = row.profileSnapshot as InstagramProfileSnapshot | null;
+    return {
+      id: row.id,
+      instagramUsername: row.instagramUsername,
+      funnel: row.funnel,
+      pipelineStatus: row.pipelineStatus,
+      channelStatus: row.channelStatus,
+      icpScore: row.icpScore,
+      profileType: row.profileType,
+      source: row.source,
+      doNotContact: row.doNotContact,
+      createdAt: row.createdAt,
+      bio: snapshot?.bio ?? "",
+    };
+  });
+}
+
+export async function getLeadById(id: number) {
+  const [row] = await db.select().from(leads).where(eq(leads.id, id));
+  return row ?? null;
 }

@@ -1,20 +1,7 @@
+import Link from "next/link";
+import { PIPELINE_LABELS_PT } from "@/features/leads/labels";
 import { countLeadsByPipelineStatus, countLeadsTotal } from "@/features/leads/queries";
 import { getMonthToDateSpendUsd } from "@/integrations/openai/client";
-
-const PIPELINE_LABELS_PT: Record<string, string> = {
-  discovered: "Descoberto",
-  qualified: "Qualificado",
-  contacted: "Abordado",
-  replied: "Respondeu",
-  interested: "Interessado",
-  whatsapp_handoff: "Encaminhado ao WhatsApp",
-  registered: "Cadastrado",
-  active_customer: "Cliente ativo",
-  joined_affiliate_group: "Entrou no grupo",
-  active_affiliate: "Afiliado ativo",
-  generated_customer: "Gerou cliente",
-  closed: "Encerrado",
-};
 
 export default async function DashboardPage() {
   const [totalLeads, byStatus, spentUsd] = await Promise.all([
@@ -25,10 +12,20 @@ export default async function DashboardPage() {
 
   return (
     <main className="mx-auto max-w-4xl px-6 py-12">
-      <h1 className="text-2xl font-semibold">Painel — Buscando 1 Milhão</h1>
-      <p className="mt-1 text-sm text-neutral-500">
-        Banco conectado. Estrutura inicial do CRM.
-      </p>
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-semibold">Painel — Buscando 1 Milhão</h1>
+          <p className="mt-1 text-sm text-neutral-500">
+            Banco conectado. Estrutura inicial do CRM.
+          </p>
+        </div>
+        <Link
+          href="/leads"
+          className="rounded-md bg-neutral-900 px-4 py-2 text-sm font-medium text-white hover:bg-neutral-700"
+        >
+          Ver leads
+        </Link>
+      </div>
 
       <section className="mt-8 grid grid-cols-2 gap-4 sm:grid-cols-3">
         <StatCard label="Leads totais" value={totalLeads} />

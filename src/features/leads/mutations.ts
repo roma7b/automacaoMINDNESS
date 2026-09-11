@@ -17,6 +17,7 @@ export async function upsertDiscoveredLead(
       funnel,
       pipelineStatus: qualification.fitsIcp ? "qualified" : "discovered",
       icpScore: qualification.icpScore,
+      icpReasoning: qualification.reasoning,
       profileType: qualification.profileType,
       profileSnapshot: profile,
       source,
@@ -25,6 +26,7 @@ export async function upsertDiscoveredLead(
       target: [leads.instagramUsername, leads.funnel],
       set: {
         icpScore: qualification.icpScore,
+        icpReasoning: qualification.reasoning,
         profileType: qualification.profileType,
         profileSnapshot: profile,
         pipelineStatus: qualification.fitsIcp ? "qualified" : "discovered",

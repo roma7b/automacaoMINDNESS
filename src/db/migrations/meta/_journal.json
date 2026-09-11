@@ -8,6 +8,13 @@
       "when": 1789157905166,
       "tag": "0000_nappy_captain_stacy",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "6",
+      "when": 1789169867697,
+      "tag": "0001_loud_black_bolt",
+      "breakpoints": true
     }
   ]
 }

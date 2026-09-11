@@ -89,10 +89,23 @@ export async function fetchProfileSnapshot(
     .innerText()
     .catch(() => "");
 
+  // header's <section> children aren't in a fixed bio-is-last order — real
+  // layout is [empty, name+counts, bio+link, follow/message buttons, ...].
+  // The bio is the first non-empty section after the one with the counts,
+  // stopping if we hit the follow/message button section instead.
   const bio = await page
     .locator("header section")
-    .last()
-    .innerText()
+    .allInnerTexts()
+    .then((sections) => {
+      const countsIdx = sections.findIndex((t) => /seguidores|followers|seguindo|following/i.test(t));
+      for (let i = countsIdx + 1; i < sections.length; i++) {
+        const text = sections[i].trim();
+        if (!text) continue;
+        if (/^(Seguir|Follow|Editar perfil|Edit profile|Enviar mensagem|Message)\b/i.test(text)) break;
+        return text;
+      }
+      return "";
+    })
     .catch(() => "");
 
   const externalUrl = await page
@@ -101,12 +114,18 @@ export async function fetchProfileSnapshot(
     .getAttribute("href")
     .catch(() => null);
 
+  // The grid lazy-loads past the avatar/story-highlights row, so a small
+  // scroll first is needed before real post images (and their alt-text
+  // captions) exist in the DOM.
+  await page.mouse.wheel(0, 1200);
+  await page.waitForTimeout(1000);
+
   const recentCaptions = await page
-    .locator("main article img[alt]")
-    .evaluateAll((imgs) =>
-      imgs
-        .map((img) => img.getAttribute("alt") ?? "")
-        .filter((alt) => alt && !/profile picture/i.test(alt))
+    .locator("main img[alt]")
+    .evaluateAll((imgs) => imgs.map((img) => img.getAttribute("alt") ?? ""))
+    .then((alts) =>
+      alts
+        .filter((alt) => alt && !/foto do perfil|profile picture|story no destaque|story highlight/i.test(alt))
         .slice(0, 6),
     )
     .catch(() => [] as string[]);
