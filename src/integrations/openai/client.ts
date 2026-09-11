@@ -54,7 +54,11 @@ async function assertBudgetAvailable() {
 
 let client: OpenAI | null = null;
 function getClient() {
-  if (!client) client = new OpenAI({ apiKey: getEnv().OPENAI_API_KEY });
+  if (!client) {
+    // The SDK's own default (10 minutes) is far too long to sit inside a
+    // worker job — a stalled call should fail fast and go to retry/dead-letter.
+    client = new OpenAI({ apiKey: getEnv().OPENAI_API_KEY, timeout: 30_000 });
+  }
   return client;
 }
 

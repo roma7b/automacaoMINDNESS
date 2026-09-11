@@ -12,6 +12,13 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // Runtime/data dirs — not source, gitignored, shouldn't be linted.
+    ".chrome-profile/**",
+    "data/**",
+    "backups/**",
+    "screenshots/**",
+    "traces/**",
+    "src/db/migrations/**",
   ]),
 ]);
 

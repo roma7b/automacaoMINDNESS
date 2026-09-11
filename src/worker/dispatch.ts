@@ -8,6 +8,7 @@ interface DiscoverHashtagPayload {
   hashtag: string;
   funnel?: "customer" | "affiliate";
   maxNewLeads?: number;
+  maxPosts?: number;
 }
 
 function parsePayload<T>(job: Job): T {
@@ -20,6 +21,7 @@ export async function dispatchJob(job: Job): Promise<void> {
       const payload = parsePayload<DiscoverHashtagPayload>(job);
       const summary = await runHashtagDiscovery(payload.hashtag, payload.funnel ?? "customer", {
         maxNewLeads: payload.maxNewLeads,
+        maxPosts: payload.maxPosts,
       });
       console.log("[worker] descoberta concluída:", summary);
       return;

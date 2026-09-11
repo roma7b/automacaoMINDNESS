@@ -1,4 +1,5 @@
 import type { Page } from "playwright";
+import { getBusinessConfig } from "@/lib/business-config";
 
 const RESERVED_PATH_SEGMENTS = new Set([
   "p",
@@ -21,15 +22,18 @@ export async function collectPostUrlsFromHashtag(
   { maxPosts = 30, maxScrolls = 10 }: { maxPosts?: number; maxScrolls?: number } = {},
 ): Promise<string[]> {
   const cleanHashtag = hashtag.replace(/^#/, "");
-  await page.goto(`https://www.instagram.com/explore/tags/${encodeURIComponent(cleanHashtag)}/`, {
-    waitUntil: "domcontentloaded",
-  });
+  // Instagram redirects /explore/tags/<tag>/ to this search-results URL now;
+  // going straight there skips one hop and matches what actually renders.
+  await page.goto(
+    `https://www.instagram.com/explore/search/keyword/?q=${encodeURIComponent(`#${cleanHashtag}`)}`,
+    { waitUntil: "domcontentloaded" },
+  );
 
   const urls = new Set<string>();
 
   for (let scroll = 0; scroll < maxScrolls && urls.size < maxPosts; scroll++) {
     const hrefs = await page
-      .locator('main a[href^="/p/"], main a[href^="/reel/"]')
+      .locator('a[href^="/p/"], a[href^="/reel/"]')
       .evaluateAll((anchors) => anchors.map((a) => a.getAttribute("href") ?? ""));
 
     for (const href of hrefs) {
@@ -52,31 +56,28 @@ function isProfileUsername(pathSegment: string): boolean {
 }
 
 /**
- * A post page's `og:title` reliably reads "<username> on Instagram: ..."
- * (or the pt-BR "<username> no Instagram: ..."), which survives markup
- * churn far better than any CSS selector into the post header.
+ * `og:title` on a post page turned out to hold the author's display name
+ * ("Giovana Mendonça no Instagram: ..."), not their @handle — no regex
+ * recovers a username from an arbitrary display name. Post permalink pages
+ * also have no `<header>` (that only exists on profile pages). What does
+ * work: the author's profile link is reliably the first profile-shaped
+ * href after the left-nav chrome (home/reels/direct/explore/own-account),
+ * so we scan early links in DOM order and skip our own operator handle.
  */
 export async function extractAuthorUsernameFromPost(page: Page, postUrl: string): Promise<string | null> {
   await page.goto(postUrl, { waitUntil: "domcontentloaded" });
 
-  const ogTitle = await page
-    .locator('meta[property="og:title"]')
-    .first()
-    .getAttribute("content")
-    .catch(() => null);
+  const ownHandle = getBusinessConfig().company.instagramHandle.replace(/^@/, "").toLowerCase();
 
-  const fromTitle = ogTitle?.match(/^([a-z0-9._]+)\s+(?:on|no)\s+Instagram/i)?.[1];
-  if (fromTitle) return fromTitle;
+  const hrefs = await page
+    .locator("a[href]")
+    .evaluateAll((anchors) => anchors.slice(0, 40).map((a) => a.getAttribute("href") ?? ""));
 
-  const headerHref = await page
-    .locator("header a[href^='/']")
-    .first()
-    .getAttribute("href")
-    .catch(() => null);
-
-  if (headerHref) {
-    const segment = headerHref.split("/").filter(Boolean)[0] ?? "";
-    if (isProfileUsername(segment)) return segment;
+  for (const href of hrefs) {
+    const segment = href.split("/").filter(Boolean)[0] ?? "";
+    if (!isProfileUsername(segment)) continue;
+    if (segment.toLowerCase() === ownHandle) continue;
+    return segment;
   }
 
   return null;

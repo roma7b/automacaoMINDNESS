@@ -44,10 +44,12 @@ async function logProfileViewed(username: string) {
 export async function runHashtagDiscovery(
   hashtag: string,
   funnel: "customer" | "affiliate" = "customer",
-  { maxNewLeads = 15 }: { maxNewLeads?: number } = {},
+  { maxNewLeads = 15, maxPosts = 15 }: { maxNewLeads?: number; maxPosts?: number } = {},
 ): Promise<DiscoveryRunSummary> {
   return withOperatorBrowserPage(async (page) => {
-    const postUrls = await collectPostUrlsFromHashtag(page, hashtag);
+    console.log(`[discovery] coletando posts de #${hashtag}...`);
+    const postUrls = await collectPostUrlsFromHashtag(page, hashtag, { maxPosts });
+    console.log(`[discovery] ${postUrls.length} posts coletados`);
 
     let profilesVisited = 0;
     let newQualifiedLeads = 0;
@@ -63,7 +65,9 @@ export async function runHashtagDiscovery(
         break;
       }
 
+      console.log(`[discovery] abrindo post ${postUrl}...`);
       const username = await extractAuthorUsernameFromPost(page, postUrl);
+      console.log(`[discovery] autor extraído: ${username ?? "(nenhum)"}`);
       await new Promise((resolve) => setTimeout(resolve, randomDiscoveryDelayMs()));
 
       if (!username || seenUsernames.has(username)) continue;
@@ -74,7 +78,9 @@ export async function runHashtagDiscovery(
         continue;
       }
 
+      console.log(`[discovery] abrindo perfil @${username}...`);
       const profile = await fetchProfileSnapshot(page, username);
+      console.log(`[discovery] perfil obtido, seguidores=${profile.followers}, qualificando...`);
       await logProfileViewed(username);
       profilesVisited++;
 

@@ -36,10 +36,20 @@ function releaseBrowserMutex() {
  * the job as browser_unavailable and pause the queue instead of silently
  * spawning a fresh, unauthenticated browser.
  */
+const CDP_CONNECT_TIMEOUT_MS = 15_000;
+const DEFAULT_PAGE_TIMEOUT_MS = 20_000;
+
+/**
+ * Playwright's connectOverCDP has NO timeout by default (0 = wait forever) —
+ * without an explicit one, a stuck handshake hangs the whole worker with no
+ * error and no log line, indistinguishable from the process being alive.
+ */
 async function connectToOperatorChrome(): Promise<Browser> {
   const env = getEnv();
   try {
-    return await chromium.connectOverCDP(env.CHROME_CDP_URL);
+    return await chromium.connectOverCDP(env.CHROME_CDP_URL, {
+      timeout: CDP_CONNECT_TIMEOUT_MS,
+    });
   } catch (cause) {
     throw new BrowserUnavailableError(cause);
   }
@@ -69,6 +79,8 @@ export async function withOperatorBrowserPage<T>(
     browser = await connectToOperatorChrome();
     const context = getLoggedInContext(browser);
     const page = await context.newPage();
+    page.setDefaultTimeout(DEFAULT_PAGE_TIMEOUT_MS);
+    page.setDefaultNavigationTimeout(DEFAULT_PAGE_TIMEOUT_MS);
     try {
       return await task(page);
     } finally {

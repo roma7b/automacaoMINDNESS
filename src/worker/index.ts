@@ -8,8 +8,41 @@ import { dispatchJob } from "./dispatch";
 
 const POLL_INTERVAL_MS = 5_000;
 const CONSECUTIVE_FAILURE_LIMIT = 5;
+// Generous on purpose: human-paced discovery (4-10s between every profile
+// visit, by design) legitimately takes minutes for just a handful of leads.
+// This ceiling exists to catch genuine hangs, not to rush the pacing.
+const JOB_TIMEOUT_MS = 20 * 60_000;
 
 let consecutiveFailures = 0;
+
+/**
+ * A job stuck at "running" can only mean the previous worker process died
+ * mid-job (crash, kill signal) — this process just started, so nothing else
+ * could be holding it. Reclaiming at boot is what makes restart recovery
+ * work instead of jobs staying stuck forever.
+ */
+async function reclaimOrphanedJobs() {
+  const reclaimed = await db
+    .update(jobs)
+    .set({ status: "pending", lastError: "Reclamado após reinício do worker" })
+    .where(eq(jobs.status, "running"))
+    .returning({ id: jobs.id });
+
+  if (reclaimed.length > 0) {
+    console.warn(
+      `[worker] ${reclaimed.length} job(s) travado(s) em "running" recuperado(s): ${reclaimed.map((j) => j.id).join(", ")}`,
+    );
+  }
+}
+
+function withTimeout<T>(promise: Promise<T>, ms: number, label: string): Promise<T> {
+  return Promise.race([
+    promise,
+    new Promise<T>((_, reject) =>
+      setTimeout(() => reject(new Error(`${label} excedeu ${ms}ms`)), ms),
+    ),
+  ]);
+}
 
 async function claimNextJob() {
   const nowIso = new Date().toISOString();
@@ -54,7 +87,7 @@ async function runOnce() {
   }
 
   try {
-    await dispatchJob(job);
+    await withTimeout(dispatchJob(job), JOB_TIMEOUT_MS, `job ${job.id} (${job.type})`);
     await db.update(jobs).set({ status: "done" }).where(eq(jobs.id, job.id));
     consecutiveFailures = 0;
   } catch (error) {
@@ -82,6 +115,7 @@ async function runOnce() {
 }
 
 async function main() {
+  await reclaimOrphanedJobs();
   console.log("[worker] iniciado, aguardando jobs...");
   for (;;) {
     await runOnce().catch((error) => console.error("[worker] erro no loop:", error));
