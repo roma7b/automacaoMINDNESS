@@ -130,3 +130,39 @@ export function randomDiscoveryDelayMs(): number {
   const maxMs = env.DISCOVERY_MAX_SECONDS_BETWEEN_ACTIONS * 1000;
   return minMs + Math.random() * (maxMs - minMs);
 }
+
+export async function getInboxChecksToday(): Promise<number> {
+  const env = getEnv();
+  const since = startOfTodayIso(env.OPERATING_TIMEZONE);
+  const [row] = await db
+    .select({ total: count() })
+    .from(auditLog)
+    .where(
+      and(
+        eq(auditLog.entityType, "instagram_thread"),
+        eq(auditLog.event, "inbox_checked"),
+        gte(auditLog.createdAt, since),
+      ),
+    );
+  return row?.total ?? 0;
+}
+
+export async function canCheckInboxNow(): Promise<
+  { allowed: true } | { allowed: false; reason: string }
+> {
+  const env = getEnv();
+
+  if (!isWithinOperatingHours()) {
+    return { allowed: false, reason: `Fora da janela de operação (${env.OPERATING_HOURS})` };
+  }
+
+  const checkedToday = await getInboxChecksToday();
+  if (checkedToday >= env.MAX_INBOX_CHECKS_PER_DAY) {
+    return {
+      allowed: false,
+      reason: `Limite diário de checagens de inbox atingido (${checkedToday}/${env.MAX_INBOX_CHECKS_PER_DAY})`,
+    };
+  }
+
+  return { allowed: true };
+}

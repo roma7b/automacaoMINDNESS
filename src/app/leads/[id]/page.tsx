@@ -7,8 +7,9 @@ import {
   PIPELINE_LABELS_PT,
   PROFILE_TYPE_LABELS_PT,
 } from "@/features/leads/labels";
-import { getLeadById } from "@/features/leads/queries";
+import { getLeadById, getMessagesForLead } from "@/features/leads/queries";
 import type { InstagramProfileSnapshot } from "@/features/leads/types";
+import { CopyButton } from "./copy-button";
 
 export default async function LeadDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -16,6 +17,7 @@ export default async function LeadDetailPage({ params }: { params: Promise<{ id:
   if (!lead) notFound();
 
   const profile = lead.profileSnapshot as InstagramProfileSnapshot | null;
+  const conversation = await getMessagesForLead(lead.id);
 
   return (
     <main className="mx-auto max-w-3xl px-6 py-12">
@@ -50,6 +52,48 @@ export default async function LeadDetailPage({ params }: { params: Promise<{ id:
           Este perfil está marcado como <strong>não contatar</strong>
           {lead.doNotContactReason ? `: ${lead.doNotContactReason}` : "."}
         </div>
+      )}
+
+      {lead.suggestedReply && (
+        <section className="mt-6 rounded-lg border border-amber-200 bg-amber-50 p-4">
+          <div className="flex items-center justify-between">
+            <h2 className="text-sm font-medium text-amber-800">Sugestão da IA pra responder</h2>
+            <CopyButton text={lead.suggestedReply} />
+          </div>
+          <p className="mt-2 whitespace-pre-line text-sm text-neutral-800">{lead.suggestedReply}</p>
+          <p className="mt-2 text-xs text-amber-700">
+            Revise antes de enviar — a IA não manda nada sozinha, só sugere.
+          </p>
+        </section>
+      )}
+
+      {conversation.length > 0 && (
+        <Section title="Conversa">
+          <ul className="space-y-2">
+            {conversation.map((message) => (
+              <li
+                key={message.id}
+                className={`max-w-[80%] rounded-lg px-3 py-2 text-sm ${
+                  message.direction === "outbound"
+                    ? "ml-auto bg-neutral-900 text-white"
+                    : "bg-neutral-100 text-neutral-800"
+                }`}
+              >
+                <p className="whitespace-pre-line">{message.content}</p>
+                <p
+                  className={`mt-1 text-[10px] ${
+                    message.direction === "outbound" ? "text-neutral-400" : "text-neutral-400"
+                  }`}
+                >
+                  {message.status === "failed" ? "falhou · " : ""}
+                  {new Date(message.createdAt).toLocaleString("pt-BR", {
+                    timeZone: "America/Sao_Paulo",
+                  })}
+                </p>
+              </li>
+            ))}
+          </ul>
+        </Section>
       )}
 
       <Section title="Bio">

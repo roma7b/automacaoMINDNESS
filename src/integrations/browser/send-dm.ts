@@ -19,7 +19,12 @@ export class MessageComposerNotFoundError extends Error {
   }
 }
 
-async function openDmComposer(page: Page, username: string): Promise<void> {
+/**
+ * Also used by the inbox-reading side (features/leads/reply-pipeline) since
+ * clicking "message" on someone already in a thread opens that same thread
+ * rather than starting a new one.
+ */
+export async function openDmComposer(page: Page, username: string): Promise<void> {
   const profileUrl = `https://www.instagram.com/${encodeURIComponent(username)}/`;
   assertInstagramUrl(profileUrl);
   await page.goto(profileUrl, { waitUntil: "domcontentloaded" });

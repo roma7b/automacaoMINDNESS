@@ -49,6 +49,9 @@ export const leads = sqliteTable(
     profileSnapshot: text("profile_snapshot", { mode: "json" }),
     source: text("source"), // discovery keyword/segment that surfaced this lead
     bestSendWindow: text("best_send_window"),
+    suggestedReply: text("suggested_reply"),
+    suggestedReplyAt: text("suggested_reply_at"),
+    lastInboxCheckAt: text("last_inbox_check_at"),
     ...timestamps,
   },
   (table) => [

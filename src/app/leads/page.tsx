@@ -47,6 +47,11 @@ export default async function LeadsPage() {
                     <Link href={`/leads/${lead.id}`} className="font-medium hover:underline">
                       @{lead.instagramUsername}
                     </Link>
+                    {lead.hasSuggestion && (
+                      <span className="ml-2 rounded bg-amber-100 px-1.5 py-0.5 text-xs text-amber-800">
+                        sugestão pendente
+                      </span>
+                    )}
                     {lead.doNotContact && (
                       <span className="ml-2 rounded bg-red-100 px-1.5 py-0.5 text-xs text-red-700">
                         não contatar

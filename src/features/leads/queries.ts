@@ -1,6 +1,6 @@
-import { count, desc, eq } from "drizzle-orm";
+import { asc, count, desc, eq } from "drizzle-orm";
 import { db } from "@/db/client";
-import { leads } from "@/db/schema";
+import { leads, messages } from "@/db/schema";
 import type { InstagramProfileSnapshot } from "./types";
 
 export async function countLeadsByPipelineStatus() {
@@ -29,10 +29,14 @@ export interface LeadListItem {
   doNotContact: boolean;
   createdAt: string;
   bio: string;
+  hasSuggestion: boolean;
 }
 
 export async function listLeads(): Promise<LeadListItem[]> {
-  const rows = await db.select().from(leads).orderBy(desc(leads.icpScore), desc(leads.createdAt));
+  const rows = await db
+    .select()
+    .from(leads)
+    .orderBy(desc(leads.suggestedReplyAt), desc(leads.icpScore), desc(leads.createdAt));
 
   return rows.map((row) => {
     const snapshot = row.profileSnapshot as InstagramProfileSnapshot | null;
@@ -48,6 +52,7 @@ export async function listLeads(): Promise<LeadListItem[]> {
       doNotContact: row.doNotContact,
       createdAt: row.createdAt,
       bio: snapshot?.bio ?? "",
+      hasSuggestion: Boolean(row.suggestedReply),
     };
   });
 }
@@ -55,4 +60,8 @@ export async function listLeads(): Promise<LeadListItem[]> {
 export async function getLeadById(id: number) {
   const [row] = await db.select().from(leads).where(eq(leads.id, id));
   return row ?? null;
+}
+
+export async function getMessagesForLead(leadId: number) {
+  return db.select().from(messages).where(eq(messages.leadId, leadId)).orderBy(asc(messages.createdAt));
 }

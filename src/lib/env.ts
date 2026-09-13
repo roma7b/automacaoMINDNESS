@@ -25,6 +25,9 @@ const envSchema = z.object({
   MAX_PROFILE_VISITS_PER_DAY: z.coerce.number().int().positive(),
   DISCOVERY_MIN_SECONDS_BETWEEN_ACTIONS: z.coerce.number().int().positive(),
   DISCOVERY_MAX_SECONDS_BETWEEN_ACTIONS: z.coerce.number().int().positive(),
+
+  MAX_INBOX_CHECKS_PER_DAY: z.coerce.number().int().positive(),
+  INBOX_CHECK_INTERVAL_MINUTES: z.coerce.number().int().positive(),
 });
 
 export type Env = z.infer<typeof envSchema>;

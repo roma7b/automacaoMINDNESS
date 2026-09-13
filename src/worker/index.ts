@@ -1,10 +1,18 @@
 import "dotenv/config";
-import { and, eq, lte } from "drizzle-orm";
+import { and, eq, inArray, isNull, lte, or } from "drizzle-orm";
 import { db } from "@/db/client";
-import { jobs } from "@/db/schema";
+import { jobs, leads } from "@/db/schema";
 import { getCircuitBreakerState, tripCircuitBreaker } from "@/lib/circuit-breaker";
-import { canSendBrowserDmNow } from "@/lib/rate-limit";
+import { getEnv } from "@/lib/env";
+import { canCheckInboxNow, canSendBrowserDmNow } from "@/lib/rate-limit";
 import { dispatchJob } from "./dispatch";
+
+type RateGate = () => Promise<{ allowed: true } | { allowed: false; reason: string }>;
+
+const RATE_GATES: Partial<Record<string, RateGate>> = {
+  browser_first_contact: canSendBrowserDmNow,
+  check_inbox: canCheckInboxNow,
+};
 
 const POLL_INTERVAL_MS = 5_000;
 const CONSECUTIVE_FAILURE_LIMIT = 5;
@@ -33,6 +41,53 @@ async function reclaimOrphanedJobs() {
       `[worker] ${reclaimed.length} job(s) travado(s) em "running" recuperado(s): ${reclaimed.map((j) => j.id).join(", ")}`,
     );
   }
+}
+
+const INBOX_SCAN_INTERVAL_MS = 60_000;
+let lastInboxScanAt = 0;
+
+/**
+ * The operator never manually triggers a reply check — leads waiting for a
+ * reply get picked up automatically, spaced by INBOX_CHECK_INTERVAL_MINUTES,
+ * deduped against whatever check_inbox jobs are already queued so we don't
+ * pile up repeats for a lead that just hasn't been checked yet.
+ */
+async function enqueueDueInboxChecks() {
+  const now = Date.now();
+  if (now - lastInboxScanAt < INBOX_SCAN_INTERVAL_MS) return;
+  lastInboxScanAt = now;
+
+  const env = getEnv();
+  const dueBefore = new Date(now - env.INBOX_CHECK_INTERVAL_MINUTES * 60_000).toISOString();
+
+  const candidates = await db
+    .select({ id: leads.id })
+    .from(leads)
+    .where(
+      and(
+        eq(leads.channelStatus, "waiting_inbound_reply"),
+        or(isNull(leads.lastInboxCheckAt), lte(leads.lastInboxCheckAt, dueBefore)),
+      ),
+    );
+  if (candidates.length === 0) return;
+
+  const pendingJobs = await db
+    .select({ payload: jobs.payload })
+    .from(jobs)
+    .where(and(eq(jobs.type, "check_inbox"), inArray(jobs.status, ["pending", "running"])));
+  const alreadyQueued = new Set(pendingJobs.map((j) => (j.payload as { leadId: number }).leadId));
+
+  const toEnqueue = candidates.filter((c) => !alreadyQueued.has(c.id));
+  if (toEnqueue.length === 0) return;
+
+  await db.insert(jobs).values(
+    toEnqueue.map((c) => ({
+      type: "check_inbox",
+      payload: { leadId: c.id },
+      runAt: new Date().toISOString(),
+    })),
+  );
+  console.log(`[worker] ${toEnqueue.length} checagem(ns) de inbox enfileirada(s) automaticamente`);
 }
 
 function withTimeout<T>(promise: Promise<T>, ms: number, label: string): Promise<T> {
@@ -71,11 +126,14 @@ async function runOnce() {
     return;
   }
 
+  await enqueueDueInboxChecks();
+
   const job = await claimNextJob();
   if (!job) return;
 
-  if (job.type === "browser_first_contact") {
-    const gate = await canSendBrowserDmNow();
+  const gateCheck = RATE_GATES[job.type];
+  if (gateCheck) {
+    const gate = await gateCheck();
     if (!gate.allowed) {
       await db
         .update(jobs)

@@ -2,6 +2,7 @@ import type { InferSelectModel } from "drizzle-orm";
 import type { jobs } from "@/db/schema";
 import { runHashtagDiscovery } from "@/features/leads/discovery-pipeline";
 import { sendFirstContact } from "@/features/leads/first-contact-pipeline";
+import { checkInboxForReply } from "@/features/leads/reply-pipeline";
 
 type Job = InferSelectModel<typeof jobs>;
 
@@ -15,6 +16,10 @@ interface DiscoverHashtagPayload {
 interface BrowserFirstContactPayload {
   leadId: number;
   dryRun?: boolean;
+}
+
+interface CheckInboxPayload {
+  leadId: number;
 }
 
 function parsePayload<T>(job: Job): T {
@@ -39,6 +44,12 @@ export async function dispatchJob(job: Job): Promise<void> {
         `[worker] primeiro contato ${result.dryRun ? "(DRY RUN)" : "(ENVIADO)"} pra @${result.username}:`,
         result,
       );
+      return;
+    }
+    case "check_inbox": {
+      const payload = parsePayload<CheckInboxPayload>(job);
+      const result = await checkInboxForReply(payload.leadId);
+      console.log(`[worker] checagem de inbox @${result.username}:`, result);
       return;
     }
     default:
