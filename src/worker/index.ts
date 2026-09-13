@@ -4,7 +4,7 @@ import { db } from "@/db/client";
 import { jobs, leads } from "@/db/schema";
 import { getCircuitBreakerState, tripCircuitBreaker } from "@/lib/circuit-breaker";
 import { getEnv } from "@/lib/env";
-import { canCheckInboxNow, canSendBrowserDmNow } from "@/lib/rate-limit";
+import { canCheckInboxNow, canSendBrowserDmNow, canVisitProfileNow } from "@/lib/rate-limit";
 import { dispatchJob } from "./dispatch";
 
 type RateGate = () => Promise<{ allowed: true } | { allowed: false; reason: string }>;
@@ -12,6 +12,11 @@ type RateGate = () => Promise<{ allowed: true } | { allowed: false; reason: stri
 const RATE_GATES: Partial<Record<string, RateGate>> = {
   browser_first_contact: canSendBrowserDmNow,
   check_inbox: canCheckInboxNow,
+  // Without this, a discovery job started outside operating hours would
+  // collect posts, hit the hours gate on the first profile visit, and
+  // return a trivially "successful" empty result instead of deferring —
+  // it looked done but never actually ran.
+  discover_hashtag: canVisitProfileNow,
 };
 
 const POLL_INTERVAL_MS = 5_000;
@@ -137,7 +142,7 @@ async function runOnce() {
     if (!gate.allowed) {
       await db
         .update(jobs)
-        .set({ status: "pending", runAt: new Date(Date.now() + 60_000).toISOString() })
+        .set({ status: "pending", runAt: new Date(Date.now() + 5 * 60_000).toISOString() })
         .where(eq(jobs.id, job.id));
       console.log(`[worker] job ${job.id} adiado: ${gate.reason}`);
       return;
