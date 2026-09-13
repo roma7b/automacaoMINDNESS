@@ -88,10 +88,14 @@ export async function runHashtagDiscovery(
       const lead = await upsertDiscoveredLead(funnel, profile, qualification, `hashtag:${hashtag}`);
       if (qualification.fitsIcp) {
         newQualifiedLeads++;
+        console.log(
+          `[discovery] QUALIFICADO @${username} score ${qualification.icpScore.toFixed(2)} (lead #${lead.id}) — ${qualification.reasoning}`,
+        );
+      } else {
+        console.log(
+          `[discovery] @${username} -> score ${qualification.icpScore.toFixed(2)} (lead #${lead.id}, fora do ICP)`,
+        );
       }
-      console.log(
-        `[discovery] @${username} -> score ${qualification.icpScore.toFixed(2)} (lead #${lead.id})`,
-      );
 
       await new Promise((resolve) => setTimeout(resolve, randomDiscoveryDelayMs()));
     }
