@@ -28,6 +28,11 @@ export async function checkInboxForReply(leadId: number): Promise<CheckInboxResu
     .where(eq(messages.leadId, leadId))
     .orderBy(asc(messages.createdAt));
   const knownContent = new Set(knownMessages.map((m) => m.content.trim()));
+  // Static profile chrome (bio, category, follow button) captured right
+  // after sending — it sits mounted under the thread overlay on every
+  // check and would otherwise look "new" forever, since it never becomes
+  // a row in `messages`.
+  for (const text of lead.threadBaseline ?? []) knownContent.add(text.trim());
 
   const result = await withOperatorBrowserPage(async (page) => {
     const threadTexts = await readThreadMessages(page, lead.instagramUsername);

@@ -4,6 +4,7 @@ import { leads, messages } from "@/db/schema";
 import { withOperatorBrowserPage } from "@/integrations/browser/cdp";
 import { captureFailureDiagnostics } from "@/integrations/browser/diagnostics";
 import { sendDirectMessage } from "@/integrations/browser/send-dm";
+import { scanVisibleThreadText } from "@/integrations/instagram/inbox";
 import { draftFirstContactMessage } from "@/integrations/openai/draft-message";
 import type { InstagramProfileSnapshot } from "./types";
 
@@ -63,9 +64,19 @@ export async function sendFirstContact(
           sentAt: new Date().toISOString(),
         });
 
+        // Captured right now, before any reply can exist — this baseline is
+        // what future inbox checks diff against, so it already contains
+        // whatever profile chrome (bio, category, follow button) sits
+        // mounted under the thread overlay.
+        const baseline = await scanVisibleThreadText(page).catch(() => []);
+
         await db
           .update(leads)
-          .set({ pipelineStatus: "contacted", channelStatus: "waiting_inbound_reply" })
+          .set({
+            pipelineStatus: "contacted",
+            channelStatus: "waiting_inbound_reply",
+            threadBaseline: baseline,
+          })
           .where(eq(leads.id, lead.id));
       }
 

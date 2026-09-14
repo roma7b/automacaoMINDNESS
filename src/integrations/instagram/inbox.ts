@@ -37,17 +37,16 @@ export class ThreadNotFoundError extends Error {
 }
 
 /**
- * Reads whatever text is currently visible in the open DM thread. Confirmed
+ * Scans whatever `dir="auto"` text is currently visible on the page. Confirmed
  * live: opening the composer from a profile page overlays the thread on top
  * of that same page rather than navigating away — the modal isn't scoped
- * under <main>, so we scan the whole page and rely on NOISE_PATTERNS plus
- * the caller's diff-against-known-messages to reject the profile content
- * still mounted underneath.
+ * under <main>, and the profile's own bio/category/follow-button text stays
+ * mounted underneath and shows up in the same scan. NOISE_PATTERNS catches
+ * generic UI chrome; the lead-specific stuff (bio, category) is caught by
+ * the caller diffing against a per-lead baseline instead, since that text
+ * varies too much per business to hardcode.
  */
-export async function readThreadMessages(page: Page, username: string): Promise<string[]> {
-  await openDmComposer(page, username);
-  await page.waitForTimeout(1000);
-
+export async function scanVisibleThreadText(page: Page): Promise<string[]> {
   const candidates = await page
     .locator('div[dir="auto"]')
     .evaluateAll((els) => els.map((el) => el.textContent ?? ""));
@@ -62,4 +61,10 @@ export async function readThreadMessages(page: Page, username: string): Promise<
   }
 
   return messages;
+}
+
+export async function readThreadMessages(page: Page, username: string): Promise<string[]> {
+  await openDmComposer(page, username);
+  await page.waitForTimeout(1000);
+  return scanVisibleThreadText(page);
 }

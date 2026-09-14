@@ -52,6 +52,13 @@ export const leads = sqliteTable(
     suggestedReply: text("suggested_reply"),
     suggestedReplyAt: text("suggested_reply_at"),
     lastInboxCheckAt: text("last_inbox_check_at"),
+    // Raw text captured from the thread right after a successful send —
+    // already includes whatever profile chrome (bio, category, follow
+    // button) sits mounted under the DM overlay. Diffing future reads
+    // against this baseline is what actually distinguishes "the profile
+    // page's own static text" from a genuinely new reply, since that noise
+    // varies per business and can't be hardcoded as a fixed pattern list.
+    threadBaseline: text("thread_baseline", { mode: "json" }).$type<string[]>(),
     ...timestamps,
   },
   (table) => [
