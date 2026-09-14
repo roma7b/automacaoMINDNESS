@@ -74,7 +74,7 @@ async function getLastBrowserDmSentAt(): Promise<Date | null> {
 }
 
 export async function canSendBrowserDmNow(): Promise<
-  { allowed: true } | { allowed: false; reason: string }
+  { allowed: true } | { allowed: false; reason: string; retryAfterMs?: number }
 > {
   const env = getEnv();
 
@@ -98,6 +98,9 @@ export async function canSendBrowserDmNow(): Promise<
       return {
         allowed: false,
         reason: `Aguardando intervalo mínimo entre DMs (faltam ${waitMore}s)`,
+        // Short, precise retry instead of the generic multi-minute defer —
+        // this block resolves in seconds, not hours like the others do.
+        retryAfterMs: (waitMore + 2) * 1000,
       };
     }
   }

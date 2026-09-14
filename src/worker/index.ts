@@ -7,7 +7,9 @@ import { getEnv } from "@/lib/env";
 import { canCheckInboxNow, canSendBrowserDmNow, canVisitProfileNow } from "@/lib/rate-limit";
 import { dispatchJob } from "./dispatch";
 
-type RateGate = () => Promise<{ allowed: true } | { allowed: false; reason: string }>;
+type RateGate = () => Promise<
+  { allowed: true } | { allowed: false; reason: string; retryAfterMs?: number }
+>;
 
 const RATE_GATES: Partial<Record<string, RateGate>> = {
   browser_first_contact: canSendBrowserDmNow,
@@ -140,9 +142,10 @@ async function runOnce() {
   if (gateCheck) {
     const gate = await gateCheck();
     if (!gate.allowed) {
+      const retryAfterMs = gate.retryAfterMs ?? 5 * 60_000;
       await db
         .update(jobs)
-        .set({ status: "pending", runAt: new Date(Date.now() + 5 * 60_000).toISOString() })
+        .set({ status: "pending", runAt: new Date(Date.now() + retryAfterMs).toISOString() })
         .where(eq(jobs.id, job.id));
       console.log(`[worker] job ${job.id} adiado: ${gate.reason}`);
       return;
