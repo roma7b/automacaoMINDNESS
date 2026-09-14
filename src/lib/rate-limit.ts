@@ -1,4 +1,4 @@
-import { and, count, eq, gte } from "drizzle-orm";
+import { and, count, desc, eq, gte } from "drizzle-orm";
 import { db } from "@/db/client";
 import { auditLog, messages } from "@/db/schema";
 import { getEnv } from "@/lib/env";
@@ -61,6 +61,18 @@ export async function getDmsSentToday(): Promise<number> {
   return row?.total ?? 0;
 }
 
+async function getLastBrowserDmSentAt(): Promise<Date | null> {
+  const [row] = await db
+    .select({ sentAt: messages.sentAt })
+    .from(messages)
+    .where(
+      and(eq(messages.direction, "outbound"), eq(messages.channel, "browser"), eq(messages.status, "sent")),
+    )
+    .orderBy(desc(messages.sentAt))
+    .limit(1);
+  return row?.sentAt ? new Date(row.sentAt) : null;
+}
+
 export async function canSendBrowserDmNow(): Promise<
   { allowed: true } | { allowed: false; reason: string }
 > {
@@ -76,6 +88,18 @@ export async function canSendBrowserDmNow(): Promise<
       allowed: false,
       reason: `Limite diário atingido (${sentToday}/${env.MAX_DMS_PER_DAY})`,
     };
+  }
+
+  const lastSentAt = await getLastBrowserDmSentAt();
+  if (lastSentAt) {
+    const secondsSince = (Date.now() - lastSentAt.getTime()) / 1000;
+    if (secondsSince < env.MIN_SECONDS_BETWEEN_DMS) {
+      const waitMore = Math.ceil(env.MIN_SECONDS_BETWEEN_DMS - secondsSince);
+      return {
+        allowed: false,
+        reason: `Aguardando intervalo mínimo entre DMs (faltam ${waitMore}s)`,
+      };
+    }
   }
 
   return { allowed: true };

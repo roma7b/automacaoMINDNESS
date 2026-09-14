@@ -29,9 +29,13 @@ export async function openDmComposer(page: Page, username: string): Promise<void
   assertInstagramUrl(profileUrl);
   await page.goto(profileUrl, { waitUntil: "domcontentloaded" });
 
+  // isVisible() is a non-waiting snapshot check — right after goto, the
+  // header often hasn't hydrated yet, so it reports false before the
+  // button ever gets a chance to render. waitFor actually waits.
   const messageButton = page.getByRole("button", { name: /enviar mensagem|message/i }).first();
-  const hasButton = await messageButton.isVisible({ timeout: 10_000 }).catch(() => false);
-  if (!hasButton) throw new MessageComposerNotFoundError(username);
+  await messageButton.waitFor({ state: "visible", timeout: 15_000 }).catch(() => {
+    throw new MessageComposerNotFoundError(username);
+  });
 
   await messageButton.click();
   await page.waitForTimeout(1500);
