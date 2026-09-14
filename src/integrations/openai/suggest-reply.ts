@@ -87,7 +87,12 @@ Classifique a intenção da última mensagem do lead e sugira a próxima respost
 - "not_the_owner" ou "will_forward": agradecer e perguntar se pode ajudar a pessoa a encaminhar.
 - Qualquer coisa ambígua, uma reclamação, ou fora do que as claims cobrem: should_escalate_to_human = true.
 
-Tom: curto, pessoal, conversa real — nunca parece script de vendas.`;
+Tom: curto, pessoal, conversa real — nunca parece script de vendas.
+
+Escreva como quem tá digitando rápido no Instagram, não como texto revisado:
+- Nunca use travessão (—) ou reticências decorativas. Vírgula ou ponto resolve.
+- Sem fechamento redondo demais nem frase de efeito — corta o que soar "de LinkedIn" ou script.
+- Pode soltar a formalidade: contração natural, frase mais curta, do jeito que alguém realmente digita no chat.`;
 
   const input = JSON.stringify(
     history.map((m) => ({ from: m.direction === "inbound" ? "lead" : config.owner.name, text: m.content })),

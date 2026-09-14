@@ -41,7 +41,14 @@ A mensagem deve:
 - Citar algo REAL e específico do perfil (bio, categoria, ou legenda recente) para provar que não é copiar e colar.
 - Nunca fingir ser cliente, nunca usar informação falsa pra puxar resposta.
 - Não apresentar preço, agenda ou pedir dados sensíveis nessa primeira mensagem — é só abertura.
-- Terminar com uma pergunta aberta e genuína relacionada ao que foi observado no perfil.`;
+- Terminar com uma pergunta aberta e genuína relacionada ao que foi observado no perfil.
+
+Escreva como uma pessoa digitando rápido no Instagram, não como texto revisado:
+- Nunca use travessão (—) ou reticências decorativas. Se precisar pausar a frase, usa vírgula ou ponto mesmo.
+- Nada de estrutura "primeiro elogio, depois pitch, depois pergunta" perfeitamente equilibrada — desorganiza um pouco,
+  como conversa de verdade.
+- Evita frases de efeito ou fechamento redondo demais. Corta qualquer coisa que soe forçado ou "de LinkedIn".
+- Pode errar a formalidade pra menos: contração natural, frase mais solta, sem parecer copidesque.`;
 
   const input = JSON.stringify({
     username: profile.username,
